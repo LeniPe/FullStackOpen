@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import entryService from './services/entries'
 
-const Entries = ({ entries, searchTerm }) => {
+const Entries = ({ entries, searchTerm, onDelete }) => {
   return (
     <div>
       {entries.map(entry =>
-        <Entry key={entry.name} entry={entry} searchTerm={searchTerm} />
+        <Entry key={entry.id} entry={entry} searchTerm={searchTerm} onDelete={onDelete} />
       )}
     </div>
   )
 }
 
-const Entry = ({ entry, searchTerm }) => {
+const Entry = ({ entry, searchTerm, onDelete }) => {
   if (entry.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-    return (<p> {entry.name} {entry.number}</p>)
+    return (
+      <p>
+        {entry.name} {entry.number} <button onClick={() => onDelete(entry.id)}>delete</button>
+      </p>)
   }
   else return null
 }
@@ -63,25 +66,49 @@ const App = () => {
 
   const addEntry = (event) => {
     event.preventDefault()
-    const names = entries.map(entry => entry.name)
+    const newEntry = { name: newName, number: newNumber }
+    const matchingEntries = entries.filter(entry => entry.name.toLowerCase() === newName.toLowerCase())
 
-    if (names.includes(newName)) {
-      console.log("Name is already in phonebook!")
-      alert(`Name ${newName} is already in phonebook`)
+    if (newName === "") {
+      alert("Name cannot be empty")
+    }
+    else if (matchingEntries.length > 0) {
+      const existing_id = matchingEntries[0].id
+      if (window.confirm(`${newName} is already in phonebook, do you want to update the number?`)) {
+        entryService
+          .update(existing_id, newEntry)
+          .then(updatedEntry => {
+            setEntries(entries.map(entry => (entry.id !== updatedEntry.id ? entry : updatedEntry)))
+          })
+      }
     }
     else {
-      const newEntry = { name: newName, number: newNumber }
-      setEntries(entries.concat(newEntry))
+      entryService
+        .create(newEntry)
+        .then(createdEntry => {
+          setEntries(entries.concat(createdEntry))
+        })
     }
     setNewName('')
     setNewNumber('')
   }
 
+  const deleteEntry = (id) => {
+    entryService
+      .remove(id)
+      .then(deletedEntry => {
+        setEntries(entries.filter(entry => entry.id !== deletedEntry.id))
+      })
+      .catch(error => {
+        console.log(`Deletion failed with error ${error}`)
+      })
+  }
+
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        setEntries(response.data)
+    entryService
+      .getAll()
+      .then(initialEntries => {
+        setEntries(initialEntries)
       })
   }
     , [])
@@ -93,7 +120,7 @@ const App = () => {
         handleNumberChange={handleNumberChange} onSubmit={addEntry} />
       <h2>Numbers</h2>
       <SearchForm searchTerm={searchTerm} onChange={handleSearchTerm} />
-      <Entries entries={entries} searchTerm={searchTerm} />
+      <Entries entries={entries} searchTerm={searchTerm} onDelete={deleteEntry} />
     </div>
   )
 }
