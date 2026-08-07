@@ -45,12 +45,34 @@ const SearchForm = ({ searchTerm, onChange }) => {
     </div>)
 }
 
+const Notification = ({message, color}) => {
+  const notificationStyle = {
+    color: color,
+    borderStyle: 'solid',
+    borderRadius: '5px',
+    padding: '10px',
+    marginBottom: '10px'
+  }
+
+  if (message === null) {
+    return null
+  }
+
+  console.log(message)
+  return (
+    <div style={notificationStyle}>
+      {message}
+    </div>
+  )
+}
+
 const App = () => {
 
   const [entries, setEntries] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [notification, setNotification] = useState({ 'message': null, 'color': 'green' })
 
   const handleNameChange = (event) => {
     setNewName(event.target.value)
@@ -79,7 +101,13 @@ const App = () => {
           .update(existing_id, newEntry)
           .then(updatedEntry => {
             setEntries(entries.map(entry => (entry.id !== updatedEntry.id ? entry : updatedEntry)))
+            showNotification(`Updated ${newName}`)
           })
+          .catch(error => {
+            showNotification(`Update failed with error: ${error}`, 'red')
+            setEntries(entries.filter(entry => entry.id !== existing_id))
+          })
+
       }
     }
     else {
@@ -87,6 +115,7 @@ const App = () => {
         .create(newEntry)
         .then(createdEntry => {
           setEntries(entries.concat(createdEntry))
+          showNotification(`Added ${newName}`)
         })
     }
     setNewName('')
@@ -98,6 +127,7 @@ const App = () => {
       .remove(id)
       .then(deletedEntry => {
         setEntries(entries.filter(entry => entry.id !== deletedEntry.id))
+        showNotification(`Deleted entry with id ${id}`, 'orange')
       })
       .catch(error => {
         console.log(`Deletion failed with error ${error}`)
@@ -113,9 +143,15 @@ const App = () => {
   }
     , [])
 
+  const showNotification = (message, color='green', timeout=3000) => {
+        setNotification({ 'message': message, 'color': color })
+        setTimeout(() => setNotification({ 'message': null, 'color': 'green' }), timeout)
+  }
+
   return (
     <div>
       <h1>Phonebook</h1>
+      <Notification message={notification.message} color={notification.color} />
       <AddEntryForm newName={newName} newNumber={newNumber} handleNameChange={handleNameChange}
         handleNumberChange={handleNumberChange} onSubmit={addEntry} />
       <h2>Numbers</h2>
