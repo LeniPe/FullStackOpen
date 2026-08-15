@@ -45,7 +45,7 @@ const SearchForm = ({ searchTerm, onChange }) => {
     </div>)
 }
 
-const Notification = ({message, color}) => {
+const Notification = ({ message, color }) => {
   const notificationStyle = {
     color: color,
     borderStyle: 'solid',
@@ -91,21 +91,19 @@ const App = () => {
     const newEntry = { name: newName, number: newNumber }
     const matchingEntries = entries.filter(entry => entry.name.toLowerCase() === newName.toLowerCase())
 
-    if (newName === "") {
-      alert("Name cannot be empty")
-    }
-    else if (matchingEntries.length > 0) {
+    if (matchingEntries.length > 0) {
       const existing_id = matchingEntries[0].id
       if (window.confirm(`${newName} is already in phonebook, do you want to update the number?`)) {
         entryService
           .update(existing_id, newEntry)
           .then(updatedEntry => {
-            setEntries(entries.map(entry => (entry.id !== updatedEntry.id ? entry : updatedEntry)))
+            setEntries(entries.map(entry => (entry.id !== updatedEntry.data.id ? entry : updatedEntry.data)))
             showNotification(`Updated ${newName}`)
+            setNewName('')
+            setNewNumber('')
           })
           .catch(error => {
-            showNotification(`Update failed with error: ${error}`, 'red')
-            setEntries(entries.filter(entry => entry.id !== existing_id))
+            showNotification(`Update failed with error: ${error.response.data.error}`, 'red')
           })
 
       }
@@ -114,19 +112,23 @@ const App = () => {
       entryService
         .create(newEntry)
         .then(createdEntry => {
-          setEntries(entries.concat(createdEntry))
+          setEntries(entries.concat(createdEntry.data))
           showNotification(`Added ${newName}`)
+          setNewName('')
+          setNewNumber('')
+        })
+        .catch(error => {
+          showNotification(`Entry was not created: ${error.response.data.error}`, 'red')
         })
     }
-    setNewName('')
-    setNewNumber('')
+
   }
 
   const deleteEntry = (id) => {
     entryService
       .remove(id)
-      .then(deletedEntry => {
-        setEntries(entries.filter(entry => entry.id !== deletedEntry.id))
+      .then(() => {
+        setEntries(entries.filter(entry => entry.id !== id))
         showNotification(`Deleted entry with id ${id}`, 'orange')
       })
       .catch(error => {
@@ -143,9 +145,9 @@ const App = () => {
   }
     , [])
 
-  const showNotification = (message, color='green', timeout=3000) => {
-        setNotification({ 'message': message, 'color': color })
-        setTimeout(() => setNotification({ 'message': null, 'color': 'green' }), timeout)
+  const showNotification = (message, color = 'green', timeout = 3000) => {
+    setNotification({ 'message': message, 'color': color })
+    setTimeout(() => setNotification({ 'message': null, 'color': 'green' }), timeout)
   }
 
   return (

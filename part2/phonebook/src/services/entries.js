@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseUrl = 'http://localhost:3001/persons'
+const baseUrl = import.meta.env.VITE_BASE_URI || 'http://localhost:3001/api/persons'
 
 const getAll = () => {
     const request = axios.get(baseUrl)
@@ -9,7 +9,7 @@ const getAll = () => {
 
 const create = (newEntry) => {
     const request = axios.post(baseUrl, newEntry)
-    return request.then(response => response.data)
+    return request.then(response => response)
 }
 
 const remove = (id) => {
@@ -19,7 +19,7 @@ const remove = (id) => {
 
 const update = (id, updatedEntry) => {
     const request = axios.put(`${baseUrl}/${id}`, updatedEntry)
-    return request.then(response => response.data)
+    return request.then(response => response)
 }
 
 export default {getAll, create, remove, update}
