@@ -1,4 +1,5 @@
 const blogsRouter = require('express').Router()
+const logger = require('../utils/logger')
 const Blog = require('../models/blog')
 
 blogsRouter.get('/', async (request, response) => {
@@ -7,8 +8,14 @@ blogsRouter.get('/', async (request, response) => {
 })
 
 blogsRouter.post('/', async (request, response) => {
-  console.log(request.body)
-  const blog = new Blog(request.body)
+  const body = request.body
+  logger.info(body)
+  const blog = new Blog({
+    title: body.title,
+    author: body.author,
+    url: body.url,
+    likes: body.likes || 0
+  })
 
   const result = await blog.save()
   response.status(201).json(result)
