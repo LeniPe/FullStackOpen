@@ -1,4 +1,4 @@
-const { test, after, beforeEach } = require('node:test')
+const { test, after, beforeEach, describe } = require('node:test')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
@@ -51,64 +51,94 @@ test('identifier is name id', async() => {
   assert.ok(blog.id)
 })
 
-test('successfuly add new blog', async() => {
-  const newBlog = {
-    'title': 'New Blog',
-    'author': 'nemo',
-    'url': 'blub',
-    'likes': 0
-  }
+describe('adding a new blog', () => {
 
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(201)
-    .expect('Content-Type', /application\/json/)
+  test('successfuly add new blog', async() => {
+    const newBlog = {
+      'title': 'New Blog',
+      'author': 'nemo',
+      'url': 'blub',
+      'likes': 0
+    }
 
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const response = await api.get('/api/blogs')
+    assert.strictEqual(response.body.length, initialBlogs.length + 1)
+
+  })
+
+  test('handling missing likes', async() => {
+    const newBlog = {
+      'title': 'New Blog',
+      'author': 'nemo',
+      'url': 'blub',
+    }
+
+    const response = await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    assert.strictEqual(response.body.likes, 0)
+
+  })
+
+  test('handling missing required field title', async() => {
+    const newBlog = {
+      'author': 'nemo',
+      'url': 'blub',
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(400)
+  })
+
+  test('handling missing required field url', async() => {
+    const newBlog = {
+      'author': 'nemo',
+      'title': 'blog title',
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(400)
+  })
+
+})
+
+test('delete existing note', async() => {
   const response = await api.get('/api/blogs')
-  assert.strictEqual(response.body.length, initialBlogs.length + 1)
-
-})
-
-test('handling missing likes', async() => {
-  const newBlog = {
-    'title': 'New Blog',
-    'author': 'nemo',
-    'url': 'blub',
-  }
-
-  const response = await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(201)
-    .expect('Content-Type', /application\/json/)
-
-  assert.strictEqual(response.body.likes, 0)
-
-})
-
-test('handling missing required field title', async() => {
-  const newBlog = {
-    'author': 'nemo',
-    'url': 'blub',
-  }
+  const blog = response.body[0]
 
   await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(400)
+    .delete(`/api/blogs/${blog.id}`)
+    .expect(204)
+
+  const response2 = await api.get('/api/blogs')
+  assert.strictEqual(response2.body.length, initialBlogs.length - 1)
+
 })
 
-test('handling missing required field url', async() => {
-  const newBlog = {
-    'author': 'nemo',
-    'title': 'blog title',
-  }
+test('update likes of existing note', async() => {
+  const response = await api.get('/api/blogs')
+  const blog = response.body[0]
 
-  await api
-    .post('/api/blogs')
-    .send(newBlog)
-    .expect(400)
+  blog.likes = 100
+  const updatedBlog = await api
+    .patch(`/api/blogs/${blog.id}`)
+    .send({ 'likes' : 100 })
+    .expect(200)
+
+  assert.strictEqual(updatedBlog.body.likes, 100)
 })
 
 after(async () => {
