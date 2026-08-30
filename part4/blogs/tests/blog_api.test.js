@@ -45,6 +45,48 @@ test('all blogs are returned', async () => {
   assert.strictEqual(response.body.length, initialBlogs.length)
 })
 
+test('identifier is name id', async() => {
+  const response = await api.get('/api/blogs')
+  const blog = response.body[0]
+  assert.ok(blog.id)
+})
+
+test('successfuly add new blog', async() => {
+  const newBlog = {
+    'title': 'New Blog',
+    'author': 'nemo',
+    'url': 'blub',
+    'likes': 0
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  const response = await api.get('/api/blogs')
+  assert.strictEqual(response.body.length, initialBlogs.length + 1)
+
+})
+
+test('handling missing likes', async() => {
+  const newBlog = {
+    'title': 'New Blog',
+    'author': 'nemo',
+    'url': 'blub',
+  }
+
+  const response = await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(201)
+    .expect('Content-Type', /application\/json/)
+
+  assert.strictEqual(response.body.likes, 0)
+
+})
+
 after(async () => {
   await mongoose.connection.close()
 })
