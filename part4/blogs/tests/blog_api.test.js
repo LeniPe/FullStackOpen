@@ -87,6 +87,30 @@ test('handling missing likes', async() => {
 
 })
 
+test('handling missing required field title', async() => {
+  const newBlog = {
+    'author': 'nemo',
+    'url': 'blub',
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+})
+
+test('handling missing required field url', async() => {
+  const newBlog = {
+    'author': 'nemo',
+    'title': 'blog title',
+  }
+
+  await api
+    .post('/api/blogs')
+    .send(newBlog)
+    .expect(400)
+})
+
 after(async () => {
   await mongoose.connection.close()
 })
